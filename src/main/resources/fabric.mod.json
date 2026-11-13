@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "deathnote",
-	"version": "1.0",
+	"version": "${version}",
 	"name": "Death Note",
 	"description": "Adds Death Note Items into Minecraft",
 	"authors": [
@@ -29,8 +29,8 @@
 		"deathnote.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.10",
-		"minecraft": "~1.21",
+		"fabricloader": ">=${loader}",
+		"minecraft": "${minecraft}",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

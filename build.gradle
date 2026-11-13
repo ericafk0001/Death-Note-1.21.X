@@ -1,9 +1,10 @@
 plugins {
-	id 'fabric-loom' version '1.9-SNAPSHOT'
+	id 'net.fabricmc.fabric-loom-remap' version '1.19.4'
 	id 'maven-publish'
 }
 
-version = project.mod_version
+// Stonecutter runs this script once per registered Minecraft version.
+version = "${project.mod_version}+${sc.current.version}"
 group = project.maven_group
 
 base {
@@ -25,21 +26,34 @@ fabricApi {
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
+	// Minecraft, mappings and Fabric dependencies are version-specific properties
+	// defined in versions/<minecraft version>/gradle.properties.
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
+}
+
+loom {
+	// Share one run directory between all versions.
+	runs.configureEach {
+		runDirectory = rootProject.file("run")
+	}
 }
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "minecraft", project.mc_compat
+	inputs.property "loader", project.loader_version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand(
+			version: project.version,
+			minecraft: project.mc_compat,
+			loader: project.loader_version
+		)
 	}
 }
 
@@ -55,11 +69,15 @@ java {
 
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 jar {
-	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_${project.base.archivesName.get()}" }
 	}
 }
 

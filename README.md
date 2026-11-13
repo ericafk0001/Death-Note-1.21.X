@@ -1,6 +1,6 @@
 # Death Note Mod :skull:
 
-A Fabric Minecraft mod for Version 1.21 that adds a few new items to the game from the death note anime! Craft the deadly book and go on a killing spree! Made by 8percent and x1yl.
+A Fabric Minecraft mod for Minecraft 1.21 and 1.21.1 that adds a few new items to the game from the death note anime! Craft the deadly book and go on a killing spree! Made by 8percent and x1yl.
 
 --> Download the latest version in the "Releases" tab. Put the jar file into your minecraft mods folder to get started!
 
@@ -24,6 +24,8 @@ A Fabric Minecraft mod for Version 1.21 that adds a few new items to the game fr
 
 ## Compiling the mod yourself
 
+This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one codebase for both Minecraft 1.21 and 1.21.1.
+
 1. **Clone the Repository**  
    Clone the repository from GitHub:
 
@@ -41,32 +43,37 @@ A Fabric Minecraft mod for Version 1.21 that adds a few new items to the game fr
 3. **Ensure You Have Required Tools Installed**  
    Make sure you have the following installed:
 
-   - [Java Development Kit (JDK) 21](https://www.oracle.com/java/technologies/javase-jdk21-downloads.html)
-   - [Gradle](https://gradle.org/install/) (optional, as the wrapper is typically included)
+   - [Java Development Kit (JDK) 25](https://adoptium.net/) — required to run Gradle and Stonecutter. Gradle provisions a Java 21 toolchain automatically for compiling the mod.
+   - [Gradle](https://gradle.org/install/) (optional, as the wrapper is included)
 
 4. **Build the Mod**  
-   Run the Gradle wrapper to build your mod:
+   Run the Gradle wrapper to build every supported Minecraft version:
 
    ```bash
-   ./gradlew build
+   ./gradlew buildAll
    ```
 
    On Windows, use:
 
    ```cmd
-   gradlew build
+   gradlew buildAll
    ```
 
-   This will generate a `Death-Note-1.21.X.jar` file in the `build/libs` directory.
+   To build a single version instead, use `./gradlew :1.21:build` or `./gradlew :1.21.1:build`.
+
+   The jars are written to:
+
+   - `versions/1.21/build/libs/deathnote-1.0.0+1.21.jar`
+   - `versions/1.21.1/build/libs/deathnote-1.0.0+1.21.1.jar`
 
 5. **Install the Mod**  
-   Copy the generated `.jar` file to your Minecraft `mods` folder:
+   Copy the `.jar` file matching your Minecraft version to your Minecraft `mods` folder:
 
    - Locate your `.minecraft` directory (typically in `%appdata%/.minecraft` on Windows or `~/.minecraft` on Linux/Mac).
    - Paste the `.jar` file into the `mods` folder.
 
 6. **Run the Mod**  
-   Launch Minecraft with the Fabric Loader 1.21.0 installed.
+   Launch Minecraft with Fabric Loader for 1.21 or 1.21.1 installed.
 
    - Ensure Fabric Loader is installed via [Fabric Installer](https://fabricmc.net/use).
    - Check that your mod appears in the `Mods` section of the Minecraft main menu.
@@ -75,10 +82,10 @@ A Fabric Minecraft mod for Version 1.21 that adds a few new items to the game fr
    To test the mod directly in the development environment:
 
    ```bash
-   ./gradlew runClient
+   ./gradlew :1.21.1:runClient
    ```
 
-   This will start a Minecraft client with your mod preloaded for testing.
+   Replace `1.21.1` with `1.21` to test the other version. This will start a Minecraft client with your mod preloaded for testing.
 
 ## How It Works
 
