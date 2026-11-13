@@ -16,8 +16,13 @@ import net.minecraft.util.Rarity;
 public class ModItems {
 
     // Food items
+    //? if >=1.21.2 {
+    /*public static final Item SHINIGAMI_APPLE = registerItem("shinigami_apple", new Item(new Item.Settings().food(ModFoodComponents.SHINIGAMI_APPLE, ModFoodComponents.SHINIGAMI_APPLE_CONSUMABLE)));
+    public static final Item POTATO_CHIP = registerItem("potato_chip", new Item(new Item.Settings().food(ModFoodComponents.POTATO_CHIP, ModFoodComponents.POTATO_CHIP_CONSUMABLE)));
+    *///?} else {
     public static final Item SHINIGAMI_APPLE = registerItem("shinigami_apple", new Item(new Item.Settings().food(ModFoodComponents.SHINIGAMI_APPLE)));
     public static final Item POTATO_CHIP = registerItem("potato_chip", new Item(new Item.Settings().food(ModFoodComponents.POTATO_CHIP)));
+    //?}
 
     // Custom items
     public static final Item DEATH_NOTE_ITEM = registerItem("death_note_item",

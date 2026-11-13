@@ -5,6 +5,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.RegistryByteBuf;
@@ -44,7 +45,11 @@ public class CustomBookEditScreen extends BookEditScreen {
     }
 
     public CustomBookEditScreen(PlayerEntity player, ItemStack book, Hand hand) {
+        //? if >=1.21.2 {
+        /*super(player, book, hand, book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT));
+        *///?} else {
         super(player, book, hand);
+        //?}
     }
 
     public record DeathNoteEffectPayload(String victimName) implements CustomPayload {
