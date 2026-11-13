@@ -30,7 +30,7 @@ public class DeathNote implements ModInitializer {
 				MinecraftServer server = context.server();
 				if (server != null) {
 					if (server.getPlayerManager().getPlayer(victimName) != null) {
-						ServerCommandSource source = server.getCommandSource();
+						ServerCommandSource source = server.getCommandSource().withSilent();
 						server.getCommandManager().executeWithPrefix(source, "title " + victimName + " times 20 60 20");
 						server.getCommandManager().executeWithPrefix(source, "title " + victimName + " subtitle {\"text\":\"Death Note claims another soul...\",\"color\":\"red\"}");
 						server.getCommandManager().executeWithPrefix(source, "title " + victimName + " title {\"text\":\"Your name was written\",\"color\":\"dark_red\"}");
