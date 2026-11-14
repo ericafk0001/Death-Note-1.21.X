@@ -1,6 +1,13 @@
 name: build
 on: [pull_request, push]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   versions:
     runs-on: ubuntu-latest
@@ -36,6 +43,8 @@ jobs:
         with:
           java-version: '25'
           distribution: 'microsoft'
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build ${{ matrix.version }}
