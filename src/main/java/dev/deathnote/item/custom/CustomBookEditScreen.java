@@ -1,36 +1,41 @@
+// CustomBookEditScreen.java
 package dev.deathnote.item.custom;
 
-import dev.deathnote.network.DeathNoteEffectPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.WritableBookContentComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.RawFilteredPair;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
-//? if >=1.21.6 {
+//? if >=1.21.2 {
 /*import net.minecraft.client.gl.RenderPipelines;
-*///?} else if >=1.21.2 {
-/*import net.minecraft.client.render.RenderLayer;
 *///?}
 
 @Environment(EnvType.CLIENT)
 public class CustomBookEditScreen extends BookEditScreen {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomBookEditScreen.class);
+    private static final Field pagesField;
+
     private static final Identifier BOOK_TEXTURE = Identifier.tryParse("deathnote:textures/gui/death_note_book.png");
     private static final int BOOK_SIZE = 192;
     private static final int BOOK_TOP = 2;
 
-    // Mirrors the vanilla writable-book text layout: text starts at 35px, wraps
-    // at 151px, and each line is 9px tall.
+    // These match the vanilla writable-book text layout on every supported version:
+    // text starts at x = left + 35/36 and y = 32, wraps at 114px, with 9px line spacing.
     private static final int RULE_LEFT = 35;
     private static final int RULE_RIGHT = 151;
     private static final int RULE_FIRST_Y = 41;
@@ -38,8 +43,24 @@ public class CustomBookEditScreen extends BookEditScreen {
     private static final int RULE_COUNT = 14;
     private static final int RULE_COLOR = 0x66A88B4E;
 
-    private final ItemStack book;
-    private final WritableBookContentComponent initialContent;
+    static {
+        Field tempField = null;
+        try {
+            for (Field field : BookEditScreen.class.getDeclaredFields()) {
+                if (List.class.isAssignableFrom(field.getType())) {
+                    tempField = field;
+                    tempField.setAccessible(true);
+                    break;
+                }
+            }
+            if (tempField == null) {
+                throw new NoSuchFieldException("No field of type List found in BookEditScreen");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        pagesField = tempField;
+    }
 
     public CustomBookEditScreen(PlayerEntity player, ItemStack book, Hand hand) {
         //? if >=1.21.2 {
@@ -47,8 +68,6 @@ public class CustomBookEditScreen extends BookEditScreen {
         *///?} else {
         super(player, book, hand);
         //?}
-        this.book = book;
-        this.initialContent = book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
     }
 
     @Override
@@ -57,11 +76,8 @@ public class CustomBookEditScreen extends BookEditScreen {
 
         int left = (this.width - BOOK_SIZE) / 2;
 
-        //? if >=1.21.6 {
+        //? if >=1.21.2 {
         /*context.drawTexture(RenderPipelines.GUI_TEXTURED, BOOK_TEXTURE, left, BOOK_TOP,
-                0.0F, 0.0F, BOOK_SIZE, BOOK_SIZE, 256, 256);
-        *///?} else if >=1.21.2 {
-        /*context.drawTexture(RenderLayer::getGuiTextured, BOOK_TEXTURE, left, BOOK_TOP,
                 0.0F, 0.0F, BOOK_SIZE, BOOK_SIZE, 256, 256);
         *///?} else {
         context.drawTexture(BOOK_TEXTURE, left, BOOK_TOP, 0, 0, BOOK_SIZE, BOOK_SIZE);
@@ -137,10 +153,10 @@ public class CustomBookEditScreen extends BookEditScreen {
             return;
         }
 
-        List<RawFilteredPair<String>> pages = content.pages();
-        if (pages.isEmpty()) {
-            return;
+        public static void send(String victimName) {
+            ClientPlayNetworking.send(new DeathNoteEffectPayload(victimName));
         }
+    }
 
         String victimName = "";
         for (int i = pages.size() - 1; i >= 0; i--) {

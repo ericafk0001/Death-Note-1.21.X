@@ -1,13 +1,6 @@
 name: build
 on: [pull_request, push]
 
-permissions:
-  contents: read
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   versions:
     runs-on: ubuntu-latest
@@ -43,14 +36,6 @@ jobs:
         with:
           java-version: '25'
           distribution: 'microsoft'
-      - name: setup gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          # Publish a public Build Scan for every Gradle invocation and link it
-          # in the job summary. No Develocity access key is needed for scans.gradle.com.
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build ${{ matrix.version }}
