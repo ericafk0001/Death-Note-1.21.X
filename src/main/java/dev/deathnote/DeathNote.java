@@ -13,17 +13,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -156,16 +151,7 @@ public class DeathNote implements ModInitializer {
 	private static void notifyVictim(ServerPlayerEntity victim) {
 		if (ServerPlayNetworking.canSend(victim, DeathNoteVictimPayload.ID)) {
 			ServerPlayNetworking.send(victim, new DeathNoteVictimPayload());
-			return;
 		}
-
-		// Clients without the mod get vanilla titles. Vanilla does not scale titles,
-		// so keep both lines short enough for a narrow high-GUI-scale viewport.
-		victim.networkHandler.sendPacket(new TitleFadeS2CPacket(20, 60, 20));
-		victim.networkHandler.sendPacket(new SubtitleS2CPacket(
-				Text.literal("Death Note").formatted(Formatting.RED)));
-		victim.networkHandler.sendPacket(new TitleS2CPacket(
-				Text.literal("Your name was written").formatted(Formatting.DARK_RED)));
 	}
 
 	private static void playThunder(ServerWorld world, Vec3d pos) {

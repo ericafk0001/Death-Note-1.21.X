@@ -77,10 +77,58 @@ public class CustomBookEditScreen extends BookEditScreen {
     public void removed() {
         super.removed();
 
-        // The Done button closes the screen before vanilla writes the edited pages
-        // back to the stack, so read them once the current client task has finished.
+        updateStackFromScreen();
+
         MinecraftClient client = MinecraftClient.getInstance();
         client.execute(() -> sendEffectIfChanged(client));
+    }
+
+    private void updateStackFromScreen() {
+        List<String> pageStrings = extractPagesFromScreen();
+        if (pageStrings.isEmpty()) {
+            return;
+        }
+
+        java.util.List<RawFilteredPair<String>> pairs = new java.util.ArrayList<>();
+        for (String s : pageStrings) {
+            pairs.add(RawFilteredPair.of(s));
+        }
+        this.book.set(DataComponentTypes.WRITABLE_BOOK_CONTENT, new WritableBookContentComponent(pairs));
+    }
+
+    private List<String> extractPagesFromScreen() {
+        Class<?> clazz = BookEditScreen.class;
+        while (clazz != null && clazz != Object.class) {
+            for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+                try {
+                    field.setAccessible(true);
+                    Object val = field.get(this);
+                    if (val instanceof List<?> list) {
+                        List<String> strings = new java.util.ArrayList<>();
+                        for (Object item : list) {
+                            if (item instanceof String str) {
+                                strings.add(str);
+                            } else if (item != null) {
+                                for (java.lang.reflect.Field f : item.getClass().getDeclaredFields()) {
+                                    f.setAccessible(true);
+                                    Object subVal = f.get(item);
+                                    if (subVal instanceof String str) {
+                                        strings.add(str);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (!strings.isEmpty()) {
+                            return strings;
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return java.util.Collections.emptyList();
     }
 
     private void sendEffectIfChanged(MinecraftClient client) {
@@ -94,9 +142,20 @@ public class CustomBookEditScreen extends BookEditScreen {
             return;
         }
 
-        String lastLine = pages.get(pages.size() - 1).get(false).trim();
-        String[] words = lastLine.split("\\s+");
-        String victimName = words[words.length - 1];
+        String victimName = "";
+        for (int i = pages.size() - 1; i >= 0; i--) {
+            String pageText = pages.get(i).get(false).trim();
+            if (!pageText.isEmpty()) {
+                String[] words = pageText.split("\\s+");
+                if (words.length > 0) {
+                    victimName = words[words.length - 1];
+                    if (!victimName.isEmpty()) {
+                        break;
+                    }
+                }
+            }
+        }
+
         if (victimName.isEmpty() || victimName.length() > DeathNoteEffectPayload.MAX_NAME_LENGTH) {
             return;
         }
