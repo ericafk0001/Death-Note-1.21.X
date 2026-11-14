@@ -10,8 +10,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 //?}
 import net.minecraft.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeathNoteItem extends Item {
+    public static final Logger LOGGER = LoggerFactory.getLogger(DeathNoteItem.class);
+
     public DeathNoteItem(Settings settings) {
         super(settings);
     }
@@ -28,7 +32,7 @@ public class DeathNoteItem extends Item {
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         if (world.isClient()) {
-            ClientDeathNoteItem.useClient(user, hand);
+            return TypedActionResult.success(ClientDeathNoteItem.useClient(user, hand));
         }
         return TypedActionResult.success(user.getStackInHand(hand));
     }
