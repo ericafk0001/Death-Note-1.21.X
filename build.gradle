@@ -25,15 +25,24 @@ fabricApi {
 	}
 }
 
-dependencies {
-	// Minecraft, mappings and Fabric dependencies are version-specific properties
-	// defined in versions/<minecraft version>/gradle.properties.
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+def nodeProperty = { String key ->
+	def node = sc.properties.raw('versions').find { it['minecraft_version'].toString() == sc.current.project }
+	if (node == null) {
+		throw new GradleException("No [[versions]] entry for Minecraft '${sc.current.project}' in stonecutter.properties.toml")
+	}
+	def value = node[key]
+	if (value == null) {
+		throw new GradleException("Missing '$key' for Minecraft '${sc.current.project}' in stonecutter.properties.toml")
+	}
+	value.toString()
+}
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+dependencies {
+	minecraft "com.mojang:minecraft:${nodeProperty('minecraft_version')}"
+	mappings "net.fabricmc:yarn:${nodeProperty('yarn_mappings')}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${nodeProperty('loader_version')}"
+
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${nodeProperty('fabric_version')}"
 }
 
 loom {
@@ -44,15 +53,26 @@ loom {
 }
 
 processResources {
+	def mcCompat = nodeProperty('mc_compat')
+	def loaderVersion = nodeProperty('loader_version')
+	def recipeFormat = nodeProperty('recipe_format')
+	def recipeFolder = nodeProperty('recipe_folder')
+
 	inputs.property "version", project.version
-	inputs.property "minecraft", project.mc_compat
-	inputs.property "loader", project.loader_version
+	inputs.property "minecraft", mcCompat
+	inputs.property "loader", loaderVersion
+	inputs.property "recipeFormat", recipeFormat
+	inputs.property "recipeFolder", recipeFolder
+
+	from(rootProject.file("src/main/recipes/${recipeFormat}")) {
+		into "data/deathnote/${recipeFolder}"
+	}
 
 	filesMatching("fabric.mod.json") {
 		expand(
 			version: project.version,
-			minecraft: project.mc_compat,
-			loader: project.loader_version
+			minecraft: mcCompat,
+			loader: loaderVersion
 		)
 	}
 }

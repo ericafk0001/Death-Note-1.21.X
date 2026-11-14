@@ -1,0 +1,8 @@
+stonecutter.active '1.21.1'
+
+// Build every supported Minecraft version with a single command.
+tasks.register('buildAll') {
+	group = 'build'
+	description = 'Builds every registered Stonecutter version.'
+	dependsOn stonecutter.tasks.names('build')
+}

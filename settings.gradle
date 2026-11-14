@@ -16,14 +16,17 @@ plugins {
 	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
+def properties = stonecutter.properties
+
 stonecutter {
 	// Use Groovy DSL for the controller and build scripts.
 	kotlinController = false
 	centralScript = 'build.gradle'
 
 	create(getRootProject()) {
-		versions '1.21', '1.21.1'
-		vcsVersion = '1.21.1'
+		// The whole build matrix lives in stonecutter.properties.toml.
+		versions(*properties.raw('versions').collect { it['minecraft_version'].toString() })
+		vcsVersion = properties.get('vcs')
 	}
 }
 

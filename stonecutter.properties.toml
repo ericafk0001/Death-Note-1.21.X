@@ -1,0 +1,34 @@
+# Stonecutter build matrix. One [[versions]] entry per build; `minecraft_version`
+# is both the node name under versions/ and the jar suffix, and `mc_compat` is
+# the range the jar claims in fabric.mod.json. `recipe_folder` is the data pack
+# directory the version reads ("recipes" before 1.21, "recipe" from 1.21 on) and
+# `recipe_format` is the ingredient syntax ("legacy" for {"item": ...}, "modern"
+# for plain ids from 1.21.2 on).
+vcs = "1.21.1"
+
+[[versions]]
+minecraft_version = "1.21.11"
+mc_compat = ">=1.21.2 <1.21.12"
+recipe_folder = "recipe"
+recipe_format = "modern"
+yarn_mappings = "1.21.11+build.6"
+loader_version = "0.17.3"
+fabric_version = "0.141.6+1.21.11"
+
+[[versions]]
+minecraft_version = "1.21.1"
+mc_compat = ">=1.20.6 <1.21.2"
+recipe_folder = "recipe"
+recipe_format = "legacy"
+yarn_mappings = "1.21.1+build.3"
+loader_version = "0.16.10"
+fabric_version = "0.116.18+1.21.1"
+
+[[versions]]
+minecraft_version = "1.20.5"
+mc_compat = "1.20.5"
+recipe_folder = "recipes"
+recipe_format = "legacy"
+yarn_mappings = "1.20.5+build.1"
+loader_version = "0.16.10"
+fabric_version = "0.97.8+1.20.5"
