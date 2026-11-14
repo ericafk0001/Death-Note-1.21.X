@@ -12,7 +12,7 @@ import net.minecraft.util.Identifier;
 
 public class ModItemGroups {
     public static final ItemGroup DEATH_NOTE_ITEMS_GROUP = Registry.register(Registries.ITEM_GROUP,
-            Identifier.of(DeathNote.MOD_ID, "death_note_items"),
+            Identifier.tryParse(DeathNote.MOD_ID + ":death_note_items"),
             FabricItemGroup.builder().icon(() -> new ItemStack(ModItems.SHINIGAMI_APPLE)) //replace with death note
                     .displayName(Text.translatable("itemgroup.deathnote.death_note_items"))
                     .entries((displayContext, entries) -> {

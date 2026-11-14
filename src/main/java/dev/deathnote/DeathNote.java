@@ -26,8 +26,6 @@ public class DeathNote implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(CustomBookEditScreen.DeathNoteEffectPayload.ID, (payload, context) -> {
 			String victimName = payload.victimName();
-			// `Context.server()` does not exist on 1.20.5, and `Entity#getServer` was
-			// removed in 1.21.9, so pick whichever API the version provides.
 			//? if >=1.20.6 {
 			MinecraftServer server = context.server();
 			//?} else {

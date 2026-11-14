@@ -9,7 +9,6 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 
 public class ModFoodComponents {
-    // In 1.21.2 the status effects moved from FoodComponent to ConsumableComponent.
     //? if >=1.21.2 {
     /*public static final FoodComponent SHINIGAMI_APPLE = new FoodComponent.Builder().nutrition(2).saturationModifier(0.2f).alwaysEdible()
             .build();

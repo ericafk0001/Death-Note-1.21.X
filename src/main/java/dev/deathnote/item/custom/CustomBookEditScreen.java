@@ -1,4 +1,4 @@
-// CustomBookEditScreen.java (client-only class)
+// CustomBookEditScreen.java
 package dev.deathnote.item.custom;
 
 import net.fabricmc.api.EnvType;
@@ -53,7 +53,8 @@ public class CustomBookEditScreen extends BookEditScreen {
     }
 
     public record DeathNoteEffectPayload(String victimName) implements CustomPayload {
-        public static final CustomPayload.Id<DeathNoteEffectPayload> ID = new CustomPayload.Id<>(Identifier.of("deathnote", "death_note_item"));
+        public static final CustomPayload.Id<DeathNoteEffectPayload> ID = new CustomPayload.Id<>(
+                Identifier.tryParse("deathnote:death_note_item"));
         public static final PacketCodec<RegistryByteBuf, DeathNoteEffectPayload> CODEC = PacketCodec.tuple(PacketCodecs.STRING, DeathNoteEffectPayload::victimName, DeathNoteEffectPayload::new);
 
         @Override

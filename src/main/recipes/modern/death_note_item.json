@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": "minecraft:writable_book",
+    "@": "minecraft:netherite_ingot",
+    "!": "minecraft:wither_skeleton_skull",
+    "a": "minecraft:apple",
+    "t": "minecraft:totem_of_undying",
+    "n": "minecraft:nether_star"
+  },
+  "pattern": [
+    "@!@",
+    "a#a",
+    "tnt"
+  ],
+  "result": {
+    "count": 1,
+    "id": "deathnote:death_note_item"
+  }
+}
