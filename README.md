@@ -111,8 +111,9 @@ It uses the Fabric API and sends packets to the server to execute commands serve
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under Eric's Protective License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 Thank you to .7410 (on discord) for helping!
+
