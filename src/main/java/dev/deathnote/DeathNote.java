@@ -1,10 +1,12 @@
-//DeathNote.java
 package dev.deathnote;
 
 import dev.deathnote.item.ModItemGroups;
 import dev.deathnote.item.ModItems;
-import dev.deathnote.item.custom.CustomBookEditScreen;
+import dev.deathnote.network.DeathNoteEffectPayload;
+import dev.deathnote.network.DeathNoteVictimPayload;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
@@ -13,8 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -28,6 +28,10 @@ import net.minecraft.world.RaycastContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 public class DeathNote implements ModInitializer {
@@ -35,24 +39,60 @@ public class DeathNote implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static final double MAX_TARGET_DISTANCE = 128.0;
+	private static final int DEATH_DELAY_TICKS = 100;
+	private static final double SMOKE_Y_OFFSET = 1.0;
+
+	private static final List<PendingDeath> PENDING_DEATHS = new ArrayList<>();
 
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Connecting with the Shinigami Realm..");
-		ModItemGroups.registerItemGroups();
 		ModItems.registerModItems();
+		ModItemGroups.registerItemGroups();
 
-		PayloadTypeRegistry.playC2S().register(CustomBookEditScreen.DeathNoteEffectPayload.ID, CustomBookEditScreen.DeathNoteEffectPayload.CODEC);
+		PayloadTypeRegistry.playC2S().register(DeathNoteEffectPayload.ID, DeathNoteEffectPayload.CODEC);
+		PayloadTypeRegistry.playS2C().register(DeathNoteVictimPayload.ID, DeathNoteVictimPayload.CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(DeathNoteEffectPayload.ID, DeathNote::receiveEffect);
+		ServerTickEvents.END_SERVER_TICK.register(DeathNote::tickPendingDeaths);
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> PENDING_DEATHS.clear());
+	}
 
-		ServerPlayNetworking.registerGlobalReceiver(CustomBookEditScreen.DeathNoteEffectPayload.ID, (payload, context) -> {
-			String victimName = payload.victimName();
-			ServerPlayerEntity writer = context.player();
-			//? if >=1.20.6 {
-			MinecraftServer server = context.server();
-			//?} else {
-			/*MinecraftServer server = writer.getServer();
-			*///?}
-			if (server == null) {
+	private static void receiveEffect(DeathNoteEffectPayload payload, ServerPlayNetworking.Context context) {
+		ServerPlayerEntity writer = context.player();
+		if (!isHoldingDeathNote(writer)) {
+			return;
+		}
+		//? if >=1.20.6 {
+		MinecraftServer server = context.server();
+		//?} else {
+		/*MinecraftServer server = writer.getServer();
+		*///?}
+		if (server == null) {
+			return;
+		}
+
+		String victimName = payload.victimName().trim();
+		if (victimName.isEmpty()) {
+			return;
+		}
+		applyEffect(server, writer, victimName);
+	}
+
+	private static boolean isHoldingDeathNote(PlayerEntity player) {
+		return player.getMainHandStack().isOf(ModItems.DEATH_NOTE_ITEM)
+				|| player.getOffHandStack().isOf(ModItems.DEATH_NOTE_ITEM);
+	}
+
+	private static void applyEffect(MinecraftServer server, ServerPlayerEntity writer, String victimName) {
+		ServerWorld writerWorld = getServerWorld(server, writer);
+		if (writerWorld == null) {
+			return;
+		}
+
+		ServerPlayerEntity victim = server.getPlayerManager().getPlayer(victimName);
+		if (victim != null) {
+			ServerWorld victimWorld = getServerWorld(server, victim);
+			if (victimWorld == null) {
 				return;
 			}
 
@@ -133,13 +173,7 @@ public class DeathNote implements ModInitializer {
 	 * crosshair targeting: cast the look vector from the eyes, pick the closest
 	 * matching entity hitbox, then reject it if a block is in the way.
 	 */
-	private static LivingEntity findLookedAtMob(ServerPlayerEntity writer) {
-		//? if >=1.21.10 {
-		/*ServerWorld world = writer.getEntityWorld();
-		*///?} else {
-		ServerWorld world = writer.getServerWorld();
-		//?}
-
+	private static LivingEntity findLookedAtMob(ServerPlayerEntity writer, ServerWorld world) {
 		Vec3d start = writer.getCameraPosVec(1.0F);
 		Vec3d direction = writer.getRotationVec(1.0F);
 		Vec3d end = start.add(direction.multiply(MAX_TARGET_DISTANCE));
@@ -168,20 +202,15 @@ public class DeathNote implements ModInitializer {
 		return (LivingEntity) entityHit.getEntity();
 	}
 
-	private static ServerCommandSource silentCommandSource(MinecraftServer server) {
-		// The console source reports that it cannot be silenced, so withSilent() alone
-		// leaves feedback broadcasts (and the op chat spam) enabled. Replace its output
-		// with a no-op first, then mark the resulting source silent.
-		return server.getCommandSource()
-				.withOutput(CommandOutput.DUMMY)
-				.withSilent();
+	private static ServerWorld getServerWorld(MinecraftServer server, ServerPlayerEntity player) {
+		for (ServerWorld world : server.getWorlds()) {
+			if (world.getPlayers().contains(player)) {
+				return world;
+			}
+		}
+		return null;
 	}
 
-	private static void executeCommand(MinecraftServer server, ServerCommandSource source, String command) {
-		//? if >=1.21.10 {
-		/*server.getCommandManager().parseAndExecute(source, command);
-		*///?} else {
-		server.getCommandManager().executeWithPrefix(source, command);
-		//?}
+	private record PendingDeath(UUID victim, int dueTick) {
 	}
 }
