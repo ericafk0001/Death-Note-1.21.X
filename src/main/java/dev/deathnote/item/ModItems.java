@@ -1,4 +1,3 @@
-//ModItems.java
 package dev.deathnote.item;
 
 import dev.deathnote.DeathNote;

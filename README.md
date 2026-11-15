@@ -1,6 +1,6 @@
 # Death Note Mod :skull:
 
-A Fabric Minecraft mod for Minecraft 1.20.5 through 1.21.11 that adds a few new items to the game from the death note anime! Craft the deadly book and go on a killing spree! Made by 8percent and x1yl.
+A Fabric Minecraft mod for Minecraft 1.20 through 26.3 that adds a few new items to the game from the death note anime! Craft the deadly book and go on a killing spree! Made by 8percent and x1yl.
 
 --> Download the latest version in the "Releases" tab. Put the jar file into your minecraft mods folder to get started!
 
@@ -24,7 +24,7 @@ A Fabric Minecraft mod for Minecraft 1.20.5 through 1.21.11 that adds a few new 
 
 ## Compiling the mod yourself
 
-This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one codebase for Minecraft 1.20.5 through 1.21.11. All version definitions (including which Minecraft releases each build targets) live in `stonecutter.properties.toml` — there is no per-version `gradle.properties` folder to maintain.
+This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one codebase for Minecraft 1.20 through 26.3. All version definitions (including which Minecraft releases each build targets) live in `stonecutter.properties.toml` — there is no per-version `gradle.properties` folder to maintain.
 
 1. **Clone the Repository**  
    Clone the repository from GitHub:
@@ -59,11 +59,12 @@ This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one c
    gradlew buildAll
    ```
 
-   To build a single version instead, use `./gradlew :1.21.1:build` or `./gradlew :1.21.11:build`.
+   To build a single version instead, use `./gradlew :1.21.2:build` or `./gradlew :1.21.11:build`.
 
    The jars are written to:
 
    - `versions/1.21.11/build/libs/deathnote-1.0.0+1.21.11.jar`
+   - `versions/1.21.2/build/libs/deathnote-1.0.0+1.21.2.jar`
    - `versions/1.21.1/build/libs/deathnote-1.0.0+1.21.1.jar`
    - `versions/1.20.5/build/libs/deathnote-1.0.0+1.20.5.jar`
 
@@ -71,13 +72,14 @@ This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one c
 
    | Build node | Works on Minecraft |
    | --- | --- |
-   | `1.21.11` | 1.21.2 – 1.21.11 |
-   | `1.21.1` | 1.20.6 – 1.21.1 |
-   | `1.20.5` | 1.20.5 |
+   | `1.21.11` | 1.21.6 – 26.3 |
+   | `1.21.2` | 1.21.2 – 1.21.5 |
+   | `1.21.1` | 1.21 – 1.21.1 |
+   | `1.20.5` | 1.20 – 1.20.6 |
 
    To add or split a version, edit `stonecutter.properties.toml`: add a `[[versions]]` block with `minecraft_version` plus its `mc_compat` / `recipe_folder` / `recipe_format` / mappings / loader entries. The Minecraft version doubles as the node name.
 
-   Recipe JSON changed shape in 1.21.2, so they live in two small trees: `src/main/recipes/modern` (1.21.2 and later) and `src/main/recipes/legacy` (older releases). Each node ships the matching set.
+   Recipe JSON changed shape in 1.21.2, so recipes live in two small trees: `src/main/recipes/modern` (1.21.2 and later) and `src/main/recipes/legacy` (older releases). Each node ships the matching set.
 
 5. **Install the Mod**  
    Copy the `.jar` file matching your Minecraft version to your Minecraft `mods` folder:
@@ -98,11 +100,11 @@ This project uses [Stonecutter](https://stonecutter.kikugie.dev/) to build one c
    ./gradlew :1.21.1:runClient
    ```
 
-   Replace `1.21.1` with any build node from the table above. This will start a Minecraft client with your mod preloaded for testing.
+   Replace `1.21.1` with any build node from the table above. This starts a Minecraft client with your mod preloaded for testing.
 
 ## How It Works
 
-It uses the Fabric API and sends packets to the server to execute commands server side such as the killing mechanics. It uses fabric's item and food components to make the custom items/food.
+It uses the Fabric API: closing the Death Note screen saves the written pages to the server and sends the victim name in a small packet, and the server checks that you are still holding the Death Note before applying the effect. Done and Sign both close the book and apply the effect, and signing never turns the Death Note into a written book. Victims then lose health in quick steps instead of dying on the spot. Player damage runs on the server tick loop instead of a background thread, and mob targeting uses the same raycast as the vanilla crosshair. Items and food are built with Minecraft data components.
 
 ## Features to Add
 

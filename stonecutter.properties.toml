@@ -8,7 +8,7 @@ vcs = "1.21.1"
 
 [[versions]]
 minecraft_version = "1.21.11"
-mc_compat = ">=1.21.2 <1.21.12"
+mc_compat = ">=1.21.6 <=26.3"
 recipe_folder = "recipe"
 recipe_format = "modern"
 yarn_mappings = "1.21.11+build.6"
@@ -16,8 +16,17 @@ loader_version = "0.17.3"
 fabric_version = "0.141.6+1.21.11"
 
 [[versions]]
+minecraft_version = "1.21.2"
+mc_compat = ">=1.21.2 <1.21.6"
+recipe_folder = "recipe"
+recipe_format = "modern"
+yarn_mappings = "1.21.2+build.1"
+loader_version = "0.16.10"
+fabric_version = "0.106.1+1.21.2"
+
+[[versions]]
 minecraft_version = "1.21.1"
-mc_compat = ">=1.20.6 <1.21.2"
+mc_compat = ">=1.21 <1.21.2"
 recipe_folder = "recipe"
 recipe_format = "legacy"
 yarn_mappings = "1.21.1+build.3"
@@ -26,7 +35,7 @@ fabric_version = "0.116.18+1.21.1"
 
 [[versions]]
 minecraft_version = "1.20.5"
-mc_compat = "1.20.5"
+mc_compat = ">=1.20 <1.21"
 recipe_folder = "recipes"
 recipe_format = "legacy"
 yarn_mappings = "1.20.5+build.1"

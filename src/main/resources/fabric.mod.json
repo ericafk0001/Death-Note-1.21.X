@@ -3,9 +3,10 @@
 	"id": "deathnote",
 	"version": "${version}",
 	"name": "Death Note",
-	"description": "Adds Death Note Items into Minecraft",
+	"description": "Adds Death Note items to Minecraft.",
 	"authors": [
-		"8percent"
+		"8percent",
+		"x1yl"
 	],
 	"contact": {
 		"homepage": "https://ericlin.netlify.app/",
@@ -14,27 +15,19 @@
 	"license": "MIT",
 	"icon": "assets/deathnote/icon.jpg",
 	"environment": "*",
+	"accessWidener": "deathnote.accesswidener",
 	"entrypoints": {
 		"main": [
 			"dev.deathnote.DeathNote"
 		],
-		"fabric-datagen": [
-			"dev.deathnote.DeathNoteDataGenerator"
-		],
 		"client": [
-			"dev.deathnote.DeathNoteClient"
+			"dev.deathnote.client.DeathNoteClient"
 		]
 	},
-	"mixins": [
-		"deathnote.mixins.json"
-	],
 	"depends": {
 		"fabricloader": ">=${loader}",
 		"minecraft": "${minecraft}",
 		"java": ">=21",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
+		"fabric-api": ">=${fabric}"
 	}
 }
