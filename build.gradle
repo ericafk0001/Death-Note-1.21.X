@@ -45,6 +45,8 @@ dependencies {
 }
 
 loom {
+	accessWidenerPath = rootProject.file("src/main/resources/deathnote.accesswidener")
+
 	// Share one run directory between all versions.
 	runs.configureEach {
 		runDirectory = rootProject.file("run")

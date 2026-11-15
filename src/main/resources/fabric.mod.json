@@ -15,6 +15,7 @@
 	"license": "MIT",
 	"icon": "assets/deathnote/icon.jpg",
 	"environment": "*",
+	"accessWidener": "deathnote.accesswidener",
 	"entrypoints": {
 		"main": [
 			"dev.deathnote.DeathNote"

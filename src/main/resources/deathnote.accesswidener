@@ -1,0 +1,4 @@
+accessWidener v2 named
+
+# The edit screen holds the live page text; the item stack only catches up on Done or Sign.
+accessible field net/minecraft/client/gui/screen/ingame/BookEditScreen pages Ljava/util/List;

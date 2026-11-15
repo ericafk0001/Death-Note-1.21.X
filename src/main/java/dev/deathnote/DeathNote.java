@@ -2,6 +2,7 @@ package dev.deathnote;
 
 import dev.deathnote.item.ModItemGroups;
 import dev.deathnote.item.ModItems;
+import dev.deathnote.network.DeathNoteBookPayload;
 import dev.deathnote.network.DeathNoteEffectPayload;
 import dev.deathnote.network.DeathNoteVictimPayload;
 import net.fabricmc.api.ModInitializer;
@@ -9,16 +10,23 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.WritableBookContentComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.RawFilteredPair;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -29,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -39,10 +47,11 @@ public class DeathNote implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static final double MAX_TARGET_DISTANCE = 128.0;
-	private static final int DEATH_DELAY_TICKS = 100;
+	private static final int DAMAGE_HITS = 10;
+	private static final int DAMAGE_INTERVAL_TICKS = 10;
 	private static final double SMOKE_Y_OFFSET = 1.0;
 
-	private static final List<PendingDeath> PENDING_DEATHS = new ArrayList<>();
+	private static final List<PendingDamage> PENDING_DAMAGE = new ArrayList<>();
 
 	@Override
 	public void onInitialize() {
@@ -51,10 +60,12 @@ public class DeathNote implements ModInitializer {
 		ModItemGroups.registerItemGroups();
 
 		PayloadTypeRegistry.playC2S().register(DeathNoteEffectPayload.ID, DeathNoteEffectPayload.CODEC);
+		PayloadTypeRegistry.playC2S().register(DeathNoteBookPayload.ID, DeathNoteBookPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(DeathNoteVictimPayload.ID, DeathNoteVictimPayload.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(DeathNoteEffectPayload.ID, DeathNote::receiveEffect);
-		ServerTickEvents.END_SERVER_TICK.register(DeathNote::tickPendingDeaths);
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> PENDING_DEATHS.clear());
+		ServerPlayNetworking.registerGlobalReceiver(DeathNoteBookPayload.ID, DeathNote::receiveBook);
+		ServerTickEvents.END_SERVER_TICK.register(DeathNote::tickPendingDamage);
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> PENDING_DAMAGE.clear());
 	}
 
 	private static void receiveEffect(DeathNoteEffectPayload payload, ServerPlayNetworking.Context context) {
@@ -78,74 +89,136 @@ public class DeathNote implements ModInitializer {
 		applyEffect(server, writer, victimName);
 	}
 
+	private static void receiveBook(DeathNoteBookPayload payload, ServerPlayNetworking.Context context) {
+		// Vanilla ignores custom books here on 1.20.x and 1.21.1, so the pages
+		// would only live on the client until the next inventory sync.
+		Hand hand = payload.hand() == Hand.OFF_HAND.ordinal() ? Hand.OFF_HAND : Hand.MAIN_HAND;
+		ItemStack book = context.player().getStackInHand(hand);
+		if (!book.isOf(ModItems.DEATH_NOTE_ITEM)) {
+			return;
+		}
+
+		List<RawFilteredPair<String>> pages = payload.pages().stream()
+				.limit(WritableBookContentComponent.MAX_PAGE_COUNT)
+				.map(RawFilteredPair::of)
+				.toList();
+		book.set(DataComponentTypes.WRITABLE_BOOK_CONTENT, new WritableBookContentComponent(pages));
+	}
+
 	private static boolean isHoldingDeathNote(PlayerEntity player) {
 		return player.getMainHandStack().isOf(ModItems.DEATH_NOTE_ITEM)
 				|| player.getOffHandStack().isOf(ModItems.DEATH_NOTE_ITEM);
 	}
 
+	private static ServerPlayerEntity findPlayer(MinecraftServer server, String name) {
+		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+			if (player.getName().getString().equalsIgnoreCase(name)) {
+				return player;
+			}
+		}
+		return null;
+	}
+
+	private static boolean matchesName(Entity entity, String name) {
+		if (entity.getName().getString().equalsIgnoreCase(name)) {
+			return true;
+		}
+		Identifier id = EntityType.getId(entity.getType());
+		return id != null && id.getPath().equalsIgnoreCase(name);
+	}
+
 	private static void applyEffect(MinecraftServer server, ServerPlayerEntity writer, String victimName) {
+		ServerPlayerEntity player = findPlayer(server, victimName);
+
+		if (player != null) {
+			ServerWorld world = getServerWorld(server, player);
+			if (world == null) {
+				return;
+			}
+			notifyVictim(player);
+			startDamage(server, world, player);
+			return;
+		}
+
 		ServerWorld writerWorld = getServerWorld(server, writer);
 		if (writerWorld == null) {
 			return;
 		}
-
-		ServerPlayerEntity victim = server.getPlayerManager().getPlayer(victimName);
-		if (victim != null) {
-			ServerWorld victimWorld = getServerWorld(server, victim);
-			if (victimWorld == null) {
-				return;
-			}
-
-			notifyVictim(victim);
-			playThunder(victimWorld, position(victim));
-			PENDING_DEATHS.add(new PendingDeath(victim.getUuid(), server.getTicks() + DEATH_DELAY_TICKS));
-			return;
-		}
-
 		LivingEntity target = findLookedAtMob(writer, writerWorld);
-		if (target == null) {
+		if (target == null || !matchesName(target, victimName)) {
 			return;
 		}
-
-		playThunder(writerWorld, position(target));
-		spawnSmoke(writerWorld, position(target));
-		kill(target, writerWorld);
+		startDamage(server, writerWorld, target);
 	}
 
-	private static void tickPendingDeaths(MinecraftServer server) {
-		if (PENDING_DEATHS.isEmpty()) {
+	private static void startDamage(MinecraftServer server, ServerWorld world, LivingEntity victim) {
+		playThunder(world, position(victim));
+		spawnSmoke(world, position(victim), 60);
+
+		float damagePerHit = victim.getMaxHealth() / DAMAGE_HITS;
+		PENDING_DAMAGE.removeIf(pending -> pending.victim().equals(victim.getUuid()));
+		PENDING_DAMAGE.add(new PendingDamage(victim.getUuid(), damagePerHit, DAMAGE_HITS, server.getTicks()));
+	}
+
+	private static void tickPendingDamage(MinecraftServer server) {
+		if (PENDING_DAMAGE.isEmpty()) {
 			return;
 		}
 
 		int now = server.getTicks();
-		Iterator<PendingDeath> iterator = PENDING_DEATHS.iterator();
+		ListIterator<PendingDamage> iterator = PENDING_DAMAGE.listIterator();
 		while (iterator.hasNext()) {
-			PendingDeath pending = iterator.next();
-			if (now < pending.dueTick()) {
+			PendingDamage pending = iterator.next();
+			if (now < pending.nextHitTick()) {
 				continue;
 			}
-			iterator.remove();
 
-			ServerPlayerEntity victim = server.getPlayerManager().getPlayer(pending.victim());
+			ServerWorld world = null;
+			LivingEntity victim = null;
+			for (ServerWorld candidate : server.getWorlds()) {
+				if (candidate.getEntity(pending.victim()) instanceof LivingEntity living) {
+					world = candidate;
+					victim = living;
+					break;
+				}
+			}
 			if (victim == null) {
-				continue;
-			}
-			ServerWorld world = getServerWorld(server, victim);
-			if (world == null) {
+				iterator.remove();
 				continue;
 			}
 
-			spawnSmoke(world, position(victim));
-			kill(victim, world);
+			boolean lastHit = pending.hitsLeft() <= 1;
+			float amount = lastHit
+					? victim.getHealth() + victim.getAbsorptionAmount() + 1.0F
+					: pending.damagePerHit();
+
+			// Vanilla's hurt cooldown eats rapid hits, so clear it before every one.
+			victim.timeUntilRegen = 0;
+			//? if >=1.21.2 {
+			/*victim.damage(world, world.getDamageSources().magic(), amount);
+			*///?} else {
+			victim.damage(world.getDamageSources().magic(), amount);
+			//?}
+			spawnSmoke(world, position(victim), 12);
+
+			if (!victim.isAlive()) {
+				iterator.remove();
+				continue;
+			}
+			if (lastHit) {
+				// Protection or absorption can soak the last hit; the name still wins.
+				//? if >=1.21.2 {
+				/*victim.kill(world);
+				*///?} else {
+				victim.kill();
+				//?}
+				iterator.remove();
+				continue;
+			}
+
+			iterator.set(new PendingDamage(pending.victim(), pending.damagePerHit(),
+					pending.hitsLeft() - 1, now + DAMAGE_INTERVAL_TICKS));
 		}
-	}
-
-	private static void kill(Entity entity, ServerWorld world) {
-		//? if >=1.21.2 {
-		/*entity.kill(world);
-		*///?} else {
-		entity.kill();
-		//?}
 	}
 
 	private static void notifyVictim(ServerPlayerEntity victim) {
@@ -159,9 +232,9 @@ public class DeathNote implements ModInitializer {
 				SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.PLAYERS, 1.0F, 1.0F);
 	}
 
-	private static void spawnSmoke(ServerWorld world, Vec3d pos) {
+	private static void spawnSmoke(ServerWorld world, Vec3d pos, int count) {
 		world.spawnParticles(ParticleTypes.SMOKE, pos.x, pos.y + SMOKE_Y_OFFSET, pos.z,
-				100, 0.5, 0.5, 0.5, 0.1);
+				count, 0.4, 0.5, 0.4, 0.02);
 	}
 
 	private static Vec3d position(Entity entity) {
@@ -211,6 +284,6 @@ public class DeathNote implements ModInitializer {
 		return null;
 	}
 
-	private record PendingDeath(UUID victim, int dueTick) {
+	private record PendingDamage(UUID victim, float damagePerHit, int hitsLeft, int nextHitTick) {
 	}
 }

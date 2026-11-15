@@ -1,5 +1,6 @@
 package dev.deathnote.client;
 
+import dev.deathnote.item.custom.CustomBookEditScreen;
 import dev.deathnote.network.DeathNoteVictimPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -11,7 +12,10 @@ public class DeathNoteClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(DeathNoteVictimPayload.ID,
                 (payload, context) -> DeathNoteHud.show());
-        ClientTickEvents.END_CLIENT_TICK.register(client -> DeathNoteHud.tick());
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            DeathNoteHud.tick();
+            CustomBookEditScreen.tickPendingSign(client);
+        });
         HudRenderCallback.EVENT.register((context, tickCounter) -> DeathNoteHud.render(context));
     }
 }
